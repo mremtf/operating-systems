@@ -15,8 +15,12 @@ typedef struct {
 
 
 bool parse_user_input (const char* string, Commands** cmds);
-bool compare_matrices (Matrix_t* a, Matrix_t* b);
+bool equal_matrices (Matrix_t* a, Matrix_t* b);
 bool duplicate_matrix (Matrix_t* src, Matrix_t* dest); 
+bool sum_matrices (Matrix_t* a, Matrix_t* b, Matrix_t* c);
 bool bitwise_shift_multply_matrix (Matrix* a, char direction, unsigned int shift);
-bool add_matrices (Matrix_t* a, Matrix_t* b, Matrix_t* c); 
+bool add_matrices (Matrix_t* a, Matrix_t* b, Matrix_t* c);
+bool display_matrix (Matrix_t* m);
+bool read_matrix(Matrix_t **m, const char* inputname);
+bool write_matrix(Matrix_t*m, const char* outputname);
 #endif
