@@ -2,6 +2,7 @@
 #define _DYNAMIC_ARRAY_
 
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef struct DynamicArray DynamicArray_t;
 
@@ -18,7 +19,7 @@ bool dynamic_array_clear (DynamicArray_t* const dyn_array);
 size_t dynamic_array_size (const DynamicArray_t* const dyn_array);
 void* dynamic_array_at (const DynamicArray_t* const dyn_array, size_t index);
 bool dynamic_array_copy_at (const DynamicArray_t* const dyn_array, size_t index, 
-								DynamicArray_t** dyn_array);
-bool dynamic_array_insert (DyanmicArray_t* const dyn_array, size_t index, 
-								DynamicArray_t **dyn_array);
+								void** object);
+bool dynamic_array_insert (DynamicArray_t* const dyn_array, size_t index, 
+								void** object);
 #endif

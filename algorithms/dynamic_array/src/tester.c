@@ -4,7 +4,7 @@
 
 #include "../include/dynamic_array.h"
 
-int main () {
+int main (void) {
 
 	return 0;
 }
