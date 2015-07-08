@@ -1,1 +1,1 @@
-/home/englandmr/workspace/operating-systems/build/CMakeFiles/runner.dir
+/home/englandmr/workspace/operating-systems/assignments/as1/build/CMakeFiles/runner.dir

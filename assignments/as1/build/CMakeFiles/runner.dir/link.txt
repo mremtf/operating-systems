@@ -1,1 +1,1 @@
-/usr/bin/cc   -g -std=c99 -Wall    CMakeFiles/runner.dir/src/runner.c.o CMakeFiles/runner.dir/src/c_refresher.c.o  -o runner -rdynamic 
+/usr/bin/cc   -g -std=c99 -Wall    CMakeFiles/runner.dir/src/runner.c.o CMakeFiles/runner.dir/src/c_refresher.c.o  -o runner -rdynamic -lreadline 

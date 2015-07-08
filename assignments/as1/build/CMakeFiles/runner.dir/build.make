@@ -35,10 +35,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/englandmr/workspace/operating-systems
+CMAKE_SOURCE_DIR = /home/englandmr/workspace/operating-systems/assignments/as1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/englandmr/workspace/operating-systems/build
+CMAKE_BINARY_DIR = /home/englandmr/workspace/operating-systems/assignments/as1/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/runner.dir/depend.make
@@ -51,17 +51,17 @@ include CMakeFiles/runner.dir/flags.make
 
 CMakeFiles/runner.dir/src/runner.c.o: CMakeFiles/runner.dir/flags.make
 CMakeFiles/runner.dir/src/runner.c.o: ../src/runner.c
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/englandmr/workspace/operating-systems/build/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/englandmr/workspace/operating-systems/assignments/as1/build/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building C object CMakeFiles/runner.dir/src/runner.c.o"
-	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/runner.dir/src/runner.c.o   -c /home/englandmr/workspace/operating-systems/src/runner.c
+	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/runner.dir/src/runner.c.o   -c /home/englandmr/workspace/operating-systems/assignments/as1/src/runner.c
 
 CMakeFiles/runner.dir/src/runner.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/runner.dir/src/runner.c.i"
-	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -E /home/englandmr/workspace/operating-systems/src/runner.c > CMakeFiles/runner.dir/src/runner.c.i
+	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -E /home/englandmr/workspace/operating-systems/assignments/as1/src/runner.c > CMakeFiles/runner.dir/src/runner.c.i
 
 CMakeFiles/runner.dir/src/runner.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/runner.dir/src/runner.c.s"
-	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -S /home/englandmr/workspace/operating-systems/src/runner.c -o CMakeFiles/runner.dir/src/runner.c.s
+	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -S /home/englandmr/workspace/operating-systems/assignments/as1/src/runner.c -o CMakeFiles/runner.dir/src/runner.c.s
 
 CMakeFiles/runner.dir/src/runner.c.o.requires:
 .PHONY : CMakeFiles/runner.dir/src/runner.c.o.requires
@@ -74,17 +74,17 @@ CMakeFiles/runner.dir/src/runner.c.o.provides.build: CMakeFiles/runner.dir/src/r
 
 CMakeFiles/runner.dir/src/c_refresher.c.o: CMakeFiles/runner.dir/flags.make
 CMakeFiles/runner.dir/src/c_refresher.c.o: ../src/c_refresher.c
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/englandmr/workspace/operating-systems/build/CMakeFiles $(CMAKE_PROGRESS_2)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/englandmr/workspace/operating-systems/assignments/as1/build/CMakeFiles $(CMAKE_PROGRESS_2)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building C object CMakeFiles/runner.dir/src/c_refresher.c.o"
-	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/runner.dir/src/c_refresher.c.o   -c /home/englandmr/workspace/operating-systems/src/c_refresher.c
+	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/runner.dir/src/c_refresher.c.o   -c /home/englandmr/workspace/operating-systems/assignments/as1/src/c_refresher.c
 
 CMakeFiles/runner.dir/src/c_refresher.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/runner.dir/src/c_refresher.c.i"
-	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -E /home/englandmr/workspace/operating-systems/src/c_refresher.c > CMakeFiles/runner.dir/src/c_refresher.c.i
+	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -E /home/englandmr/workspace/operating-systems/assignments/as1/src/c_refresher.c > CMakeFiles/runner.dir/src/c_refresher.c.i
 
 CMakeFiles/runner.dir/src/c_refresher.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/runner.dir/src/c_refresher.c.s"
-	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -S /home/englandmr/workspace/operating-systems/src/c_refresher.c -o CMakeFiles/runner.dir/src/c_refresher.c.s
+	/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -S /home/englandmr/workspace/operating-systems/assignments/as1/src/c_refresher.c -o CMakeFiles/runner.dir/src/c_refresher.c.s
 
 CMakeFiles/runner.dir/src/c_refresher.c.o.requires:
 .PHONY : CMakeFiles/runner.dir/src/c_refresher.c.o.requires
@@ -123,6 +123,6 @@ CMakeFiles/runner.dir/clean:
 .PHONY : CMakeFiles/runner.dir/clean
 
 CMakeFiles/runner.dir/depend:
-	cd /home/englandmr/workspace/operating-systems/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/englandmr/workspace/operating-systems /home/englandmr/workspace/operating-systems /home/englandmr/workspace/operating-systems/build /home/englandmr/workspace/operating-systems/build /home/englandmr/workspace/operating-systems/build/CMakeFiles/runner.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/englandmr/workspace/operating-systems/assignments/as1/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/englandmr/workspace/operating-systems/assignments/as1 /home/englandmr/workspace/operating-systems/assignments/as1 /home/englandmr/workspace/operating-systems/assignments/as1/build /home/englandmr/workspace/operating-systems/assignments/as1/build /home/englandmr/workspace/operating-systems/assignments/as1/build/CMakeFiles/runner.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/runner.dir/depend
 

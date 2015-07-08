@@ -6,23 +6,27 @@
 
 #IncludeRegexTransform: 
 
-/home/englandmr/workspace/operating-systems/include/c_refresher.h
+/home/englandmr/workspace/operating-systems/assignments/as1/include/c_refresher.h
+stdbool.h
+-
 
-/home/englandmr/workspace/operating-systems/src/c_refresher.c
-../include/c_refresher.h
-/home/englandmr/workspace/operating-systems/include/c_refresher.h
-
-/home/englandmr/workspace/operating-systems/src/runner.c
+/home/englandmr/workspace/operating-systems/assignments/as1/src/c_refresher.c
 stdio.h
 -
 stdlib.h
 -
 string.h
 -
-limits.h
+stdbool.h
 -
-math.h
+fcntl.h
+-
+sys/types.h
+-
+sys/stat.h
+-
+unistd.h
 -
 ../include/c_refresher.h
-/home/englandmr/workspace/operating-systems/include/c_refresher.h
+/home/englandmr/workspace/operating-systems/assignments/as1/include/c_refresher.h
 

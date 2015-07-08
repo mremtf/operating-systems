@@ -4,8 +4,8 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_C
-  "/home/englandmr/workspace/operating-systems/src/c_refresher.c" "/home/englandmr/workspace/operating-systems/build/CMakeFiles/runner.dir/src/c_refresher.c.o"
-  "/home/englandmr/workspace/operating-systems/src/runner.c" "/home/englandmr/workspace/operating-systems/build/CMakeFiles/runner.dir/src/runner.c.o"
+  "/home/englandmr/workspace/operating-systems/assignments/as1/src/c_refresher.c" "/home/englandmr/workspace/operating-systems/assignments/as1/build/CMakeFiles/runner.dir/src/c_refresher.c.o"
+  "/home/englandmr/workspace/operating-systems/assignments/as1/src/runner.c" "/home/englandmr/workspace/operating-systems/assignments/as1/build/CMakeFiles/runner.dir/src/runner.c.o"
   )
 SET(CMAKE_C_COMPILER_ID "GNU")
 
