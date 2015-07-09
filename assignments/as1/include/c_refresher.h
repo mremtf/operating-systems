@@ -33,6 +33,6 @@ bool duplicate_matrix (Matrix_t* src, Matrix_t** dest);
 bool equal_matrices (Matrix_t* a, Matrix_t* b); 
 void display_matrix (Matrix_t* m); 
 bool run_commands (Commands_t* cmd, Matrix_t* mats,unsigned int num_mats);
-
+bool random_matrix(Matrix_t* m, unsigned int start_range, unsigned int end_range);
 
 #endif

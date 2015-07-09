@@ -3,6 +3,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <time.h>
 
 #include<readline/readline.h>
 
@@ -10,12 +11,12 @@
 
 
 int main (int argc, char **argv) {
-	
+	srand(time(NULL));	
 	char *line = NULL;
 	Commands_t* cmd;
 	line = readline("> ");
 
-	Matrix_t* mats[10];
+	Matrix_t mats[10];
 	memset(&mats,0, sizeof(Matrix_t) * 10);
 
 	while (strncmp(line,"exit", strlen("exit")  + 1) != 0) {
