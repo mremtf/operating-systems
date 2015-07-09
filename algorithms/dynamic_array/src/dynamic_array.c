@@ -31,7 +31,7 @@ bool dynamic_array_initialize(DynamicArray_t** dyn_array, size_t capacity, size_
 			new_capacity <<= 1;	
 		}
 	}
-	printf("capacity = %lu", new_capacity);
+	printf("capacity = %lu\n", new_capacity);
 	(*dyn_array)->capacity = new_capacity;
 	(*dyn_array)->array = calloc(new_capacity,data_type_size);
 	return true;
@@ -69,6 +69,7 @@ void* dynamic_array_back (DynamicArray_t* const dyn_array) {
 bool dynamic_array_clear (DynamicArray_t* const dyn_array) {
 	if (!dyn_array) return false;
 	memset (dyn_array->array,0,dyn_array->data_type_size * dyn_array->size);
+	dyn_array->size = 0;
 	return true;
 }
 size_t dynamic_array_size (const DynamicArray_t* const dyn_array) {
