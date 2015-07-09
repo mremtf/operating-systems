@@ -45,8 +45,17 @@ bool dynamic_array_destroy (DynamicArray_t** dyn_array) {
 	return true;
 }
 bool dynamic_array_push_back (DynamicArray_t* const dyn_array, void* object) {
-	
-	return false;
+	if (!dyn_array || !object) {
+		return false;
+	}
+	dyn_array->size++;
+	if (dyn_array->size == dyn_array->capacity) {
+		if (!dynamic_array_increase_capacity(dyn_array)) {
+			return false;
+		}
+	}
+	memcpy(object,&dyn_array->array[dyn_array->size - 1],dyn_array->data_type_size);	
+	return true;
 }
 bool dynamic_array_push_front (DynamicArray_t* const dyn_array, void* object) {
 	return false;
@@ -61,10 +70,10 @@ bool dynamic_array_erase (DynamicArray_t* const dyn_array, size_t index) {
 	return false;
 }
 void* dynamic_array_front (DynamicArray_t* const dyn_array) {
-	return NULL;
+	return dynamic_array_at(dyn_array,0);
 }
 void* dynamic_array_back (DynamicArray_t* const dyn_array) {
-	return NULL;
+	return dynamic_array_at(dyn_array,dyn_array->size - 1);
 }
 bool dynamic_array_clear (DynamicArray_t* const dyn_array) {
 	if (!dyn_array) return false;
