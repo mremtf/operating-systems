@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 struct DynamicArray {
 	size_t capacity;
@@ -19,12 +20,32 @@ bool dynamic_array_increase_capacity (DynamicArray_t* dyn_array);
 
 /*public function definitions*/
 bool dynamic_array_initialize(DynamicArray_t** dyn_array, size_t capacity, size_t data_type_size) {
-	return false;
+	if ((*dyn_array)) {
+		return false;
+	}
+	
+	*dyn_array = calloc(1,sizeof(DynamicArray_t));
+	size_t new_capacity = 16;
+	if (capacity > 16) {
+		while (new_capacity <= capacity) {
+			new_capacity <<= 1;	
+		}
+	}
+	printf("capacity = %lu", new_capacity);
+	(*dyn_array)->capacity = new_capacity;
+	(*dyn_array)->array = calloc(new_capacity,data_type_size);
+	return true;
 }
 bool dynamic_array_destroy (DynamicArray_t** dyn_array) {
-	return false;
+	if (!(*dyn_array)) {
+		return false;
+	}
+	free((*dyn_array)->array);
+	free(*dyn_array);
+	return true;
 }
 bool dynamic_array_push_back (DynamicArray_t* const dyn_array, void* object) {
+	
 	return false;
 }
 bool dynamic_array_push_front (DynamicArray_t* const dyn_array, void* object) {
@@ -46,23 +67,38 @@ void* dynamic_array_back (DynamicArray_t* const dyn_array) {
 	return NULL;
 }
 bool dynamic_array_clear (DynamicArray_t* const dyn_array) {
-	return false;
+	if (!dyn_array) return false;
+	memset (dyn_array->array,0,dyn_array->data_type_size * dyn_array->size);
+	return true;
 }
 size_t dynamic_array_size (const DynamicArray_t* const dyn_array) {
-	return 0;
+	if (!dyn_array) {
+		return 0;
+	}
+	return dyn_array->size;
 }
 void* dynamic_array_at (const DynamicArray_t* const dyn_array, size_t index) {
-	return NULL;
+	if (index >= dyn_array->size || !dyn_array) {
+		return NULL;
+	}
+	return &dyn_array->array[index * dyn_array->data_type_size];
 }
 bool dynamic_array_copy_at (const DynamicArray_t* const dyn_array, size_t index, 
 								void** object) {
-
-	return false;
+	if (index >= dyn_array->size || !dyn_array || !(*object)) {
+		return false;
+	}
+	*object = calloc(1,dyn_array->data_type_size);
+	memcpy(&dyn_array->array[index * dyn_array->data_type_size],*object,dyn_array->data_type_size);
+	return true;
 }
 bool dynamic_array_insert (DynamicArray_t* const dyn_array, size_t index, 
 								void **object) {
-								
-	return false;								
+	if (index >= dyn_array->size || !dyn_array || !(*object)) {
+		return false;
+	}	
+	memcpy(*object, &dyn_array->array[index * dyn_array->data_type_size],dyn_array->data_type_size);
+	return true;								
 }
 
 /* Private Function Definitions */
