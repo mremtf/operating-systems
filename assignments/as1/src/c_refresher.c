@@ -15,11 +15,12 @@
 #define MAX_CMD_COUNT 50
 
 /*protected functions*/
-unsigned int find_next_free_matrix (Matrix_t* mats, unsigned int num_mats);
+void add_matrix (Matrix_t* mats, Matrix_t* new_matrix, unsigned int num_mats);
 unsigned int find_matrix_given_name (Matrix_t* mats, unsigned int num_mats, const char* target);
 
 
-bool create_matrix (Matrix_t** new_matrix,const unsigned int rows,const unsigned int cols) {
+bool create_matrix (Matrix_t** new_matrix, const char* name, const unsigned int rows,
+						const unsigned int cols) {
 	*new_matrix = calloc(1,sizeof(Matrix_t));
 	if (!(*new_matrix)) {
 		return false;
@@ -30,17 +31,20 @@ bool create_matrix (Matrix_t** new_matrix,const unsigned int rows,const unsigned
 	}
 	(*new_matrix)->rows = rows;
 	(*new_matrix)->cols = cols;
+	unsigned int len = strlen(name) + 1; 
+	if (len > 50) {
+		return false;
+	}
+	strncpy((*new_matrix)->name,name,len);
 	return true;
 
 }
 
 void destroy_matrix (Matrix_t** m) {
 	free((*m)->data);
-	free(*m);
-	*m = NULL;
+	//free(*m);
+	//*m = NULL;
 }
-
-
 
 bool parse_user_input (const char* input, Commands_t** cmd) {
 
@@ -97,10 +101,6 @@ bool duplicate_matrix (Matrix_t* src, Matrix_t** dest) {
 		return false;
 	}
 
-	if (!create_matrix(dest,src->rows, src->cols)) {
-		return false;
-	}
-
 	memcpy(src,dest, sizeof(Matrix_t));	
 	return equal_matrices (src,*dest);
 }
@@ -110,7 +110,7 @@ bool bitwise_shift_matrix (Matrix_t* a, char direction, unsigned int shift) {
 		return false;
 	}
 
-	if (direction == 'L') {
+	if (direction == 'l') {
 		unsigned int i = 0;
 		for (; i < a->rows; ++i) {
 			unsigned int j = 0;
@@ -133,7 +133,7 @@ bool bitwise_shift_matrix (Matrix_t* a, char direction, unsigned int shift) {
 	return true;
 }
 
-bool add_matrices (Matrix_t* a, Matrix_t* b, Matrix_t** c) {
+bool add_matrices (Matrix_t* a, Matrix_t* b, Matrix_t* c) {
 
 	if (!a || !b) {
 		return false;
@@ -142,14 +142,10 @@ bool add_matrices (Matrix_t* a, Matrix_t* b, Matrix_t** c) {
 	if (a->rows != b->rows && a->cols != b->cols) {
 		return false;
 	}
-	
-	if (!create_matrix(c,a->rows,a->cols)) {
-		return false;
-	}
 
 	for (int i = 0; i < a->rows; ++i) {
 		for (int j = 0; j < b->cols; ++j) {
-			(*c)->data[i * a->cols +j] = a->data[i * a->cols + j] + b->data[i * a->cols + j];
+			c->data[i * a->cols +j] = a->data[i * a->cols + j] + b->data[i * a->cols + j];
 		}
 	}
 	return true;
@@ -209,7 +205,7 @@ bool read_matrix (const char* matrix_input_filename, Matrix_t** m) {
 		return false;
 	}
 
-	if (!create_matrix(m,rows,cols)) {
+	if (!create_matrix(m,"test",rows,cols)) {
 		return false;
 	}
 
@@ -256,15 +252,28 @@ bool run_commands (Commands_t* cmd, Matrix_t* mats, unsigned int num_mats) {
 	if (strncmp(cmd->cmds[0],"display",strlen("display") + 1) == 0
 		&& cmd->num_cmds == 2) {
 			/*find the requested matrix*/
-			int idx = find_next_free_matrix(mats,num_mats);
-			if (idx < 0) {
-				return false;
+			int idx = find_matrix_given_name(mats,num_mats,cmd->cmds[1]);
+			if (idx >= 0) {
+				display_matrix (&mats[idx]);
 			}
-			display_matrix (&mats[idx]);
 	}
 	else if (strncmp(cmd->cmds[0],"add",strlen("add") + 1) == 0
-		&& cmd->num_cmds == 3) {
-		//	add();
+		&& cmd->num_cmds == 4) {
+			int mat1_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[1]);
+			int mat2_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[2]);
+			if (mat1_idx >= 0 && mat2_idx >= 0) {
+				Matrix_t* c = NULL;
+				if( !create_matrix (&c,cmd->cmds[3], mats[mat1_idx].rows, 
+						mats[mat1_idx].cols)) {
+					return false;
+				}
+			
+				add_matrix(mats,c, num_mats);
+
+				if (! add_matrices(&mats[mat1_idx], &mats[mat2_idx],c) ) {
+					return false;	
+				}
+			}
 	}
 	else if (strncmp(cmd->cmds[0],"duplicate",strlen("duplicate") + 1) == 0
 		&& cmd->num_cmds == 2) {
@@ -285,9 +294,24 @@ bool run_commands (Commands_t* cmd, Matrix_t* mats, unsigned int num_mats) {
 	}
 	else if (strncmp(cmd->cmds[0],"write",strlen("write") + 1) == 0
 		&& cmd->num_cmds == 2) {
-
-		//write();
+		printf("INSIDE WRITE\n");
+		int mat1_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[1]);
+		if(! write_matrix(mats[mat1_idx].name,&mats[mat1_idx])) {
+			return false;
+		}
 	
+	}
+	else if (strncmp(cmd->cmds[0], "create", strlen("create") + 1) == 0
+		&& cmd->num_cmds == 4) {
+		printf("INSIDE CREATE");
+		Matrix_t* new_mat = NULL;
+		const unsigned int rows = atoi(cmd->cmds[2]);
+		const unsigned int cols = atoi(cmd->cmds[3]);
+
+		create_matrix(&new_mat,cmd->cmds[1],rows, cols);
+		add_matrix(mats,new_mat,num_mats);
+
+		printf("Created Matrix (%s,%u,%u)\n", new_mat->name, new_mat->rows, new_mat->cols);
 	}
 	else {
 		return false;
@@ -297,14 +321,15 @@ bool run_commands (Commands_t* cmd, Matrix_t* mats, unsigned int num_mats) {
 
 /*Protected Functions in C*/
 
-unsigned int find_next_free_matrix (Matrix_t* mats, unsigned int num_mats) {
-	
-	for (int i = 0; i < num_mats; ++i) {
-		if (!mats[i].data) {
-			return i;
-		}	
+void add_matrix (Matrix_t* mats, Matrix_t* new_matrix, unsigned int num_mats) {
+	static long int current_position = 0;
+	const long int pos = current_position % num_mats;
+	Matrix_t* temp = &mats[pos];
+	if (temp->data) {
+		destroy_matrix(&temp);
 	}
-	return -1;
+	memcpy(&mats[pos],new_matrix,sizeof(Matrix_t));	
+	current_position++;
 }
 
 unsigned int find_matrix_given_name (Matrix_t* mats, unsigned int num_mats, const char* target) {
