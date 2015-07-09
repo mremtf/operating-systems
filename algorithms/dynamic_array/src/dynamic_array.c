@@ -93,7 +93,7 @@ void* dynamic_array_at (const DynamicArray_t* const dyn_array, size_t index) {
 	}
 	return &dyn_array->array[index * dyn_array->data_type_size];
 }
-bool dynamic_array_copy_at (const DynamicArray_t* const dyn_array, size_t index, 
+bool dynamic_array_extract_at (const DynamicArray_t* const dyn_array, size_t index, 
 								void** object) {
 	if (index >= dyn_array->size || !dyn_array || !(*object)) {
 		return false;
