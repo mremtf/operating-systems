@@ -2,18 +2,18 @@ Lets refresh your C memory with file reading, pointers, structs, binary, and c f
 
 Run the program
 -------------------------------------
-./matlab <numberOfpossibleMatrices>
+./matlab
 
 Program commands
 -------------------------------------
 
-display <matrix>
-add <matrix_1> <matrix_matrix_2> <matrix_3>
-sum <matrix_1>
-duplicate <src_matrix_1> <dst_matrix>
-equal <matrix_1> <matrix_2>
-shitf <matrix_1> <shift_direction>
+display <matrix_name>
+add <first_matrix_name> <second_matrix_name_two> <matrix_result_name>
+sum <matrix_name>
+duplicate <src_matrix_name> <dest_matrix_name>
+equal <matrix_name_one> <matrix_name_two>
+shitf <matrix_name> <shift_direction> <shifts>
 read <matrix_binary_file>
 write <matrix_binary_file>
-
-
+random <matrix_name> <start_range> <end_range>
+create <matrix_name> <row_size> <col_size>
