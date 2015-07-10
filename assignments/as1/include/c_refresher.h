@@ -29,7 +29,7 @@ bool read_matrix (const char* matrix_input_filename, Matrix_t** m);
 int sum_matrix (Matrix_t* m);
 bool add_matrices (Matrix_t* a, Matrix_t* b, Matrix_t* c); 
 bool bitwise_shift_matrix (Matrix_t* a, char direction, unsigned int shift);
-bool duplicate_matrix (Matrix_t* src, Matrix_t** dest);
+bool duplicate_matrix (Matrix_t* src, Matrix_t* dest);
 bool equal_matrices (Matrix_t* a, Matrix_t* b); 
 void display_matrix (Matrix_t* m); 
 bool run_commands (Commands_t* cmd, Matrix_t* mats,unsigned int num_mats);

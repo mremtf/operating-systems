@@ -96,13 +96,16 @@ bool equal_matrices (Matrix_t* a, Matrix_t* b) {
 	return false;
 }
 
-bool duplicate_matrix (Matrix_t* src, Matrix_t** dest) {
+bool duplicate_matrix (Matrix_t* src, Matrix_t* dest) {
 	if (!src) {
 		return false;
 	}
-
-	memcpy(src,dest, sizeof(Matrix_t));	
-	return equal_matrices (src,*dest);
+	/*
+	 * copy over data
+	 */
+	unsigned int bytesToCopy = sizeof(unsigned int) * src->rows * src->cols;
+	memcpy(src->data,dest->data, bytesToCopy);	
+	return equal_matrices (src,dest);
 }
 
 bool bitwise_shift_matrix (Matrix_t* a, char direction, unsigned int shift) {
@@ -315,15 +318,36 @@ bool run_commands (Commands_t* cmd, Matrix_t* mats, unsigned int num_mats) {
 	}
 	else if (strncmp(cmd->cmds[0],"duplicate",strlen("duplicate") + 1) == 0
 		&& cmd->num_cmds == 2) {
-		//duplicate();
+		int mat1_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[1]);
+		if (mat1_idx >= 0 ) {
+				Matrix_t* dup_mat = NULL;
+				if( !create_matrix (&dup_mat,cmd->cmds[2], mats[mat1_idx].rows, 
+						mats[mat1_idx].cols)) {
+					return false;
+				}
+				duplicate_matrix (&mats[mat1_idx], dup_mat);
+				add_matrix(mats,dup_mat,num_mats);
+		}
 	}
 	else if (strncmp(cmd->cmds[0],"equal",strlen("equal") + 1) == 0
 		&& cmd->num_cmds == 2) {
-		//equal();
+			int mat1_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[1]);
+			int mat2_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[2]);
+			if (mat1_idx >= 0 && mat2_idx >= 0) {
+				if ( equal_matrices(&mats[mat1_idx],&mats[mat2_idx]) ) {
+					printf("SAME DATA IN BOTH\n");
+				}
+				else {
+					printf("DIFFERENT DATA IN BOTH\n");
+				}
+			}
 	}
 	else if (strncmp(cmd->cmds[0],"shift",strlen("shift") + 1) == 0
-		&& cmd->num_cmds == 3) {
-		//shift();
+		&& cmd->num_cmds == 4) {
+		int mat1_idx = find_matrix_given_name(mats,num_mats,cmd->cmds[1]);
+		if (mat1_idx >= 0 ) {
+			bitwise_shift_matrix(&mats[mat1_idx],cmd->cmds[2][0], atoi(cmd->cmds[3]));	
+		}
 	}
 	else if (strncmp(cmd->cmds[0],"read",strlen("read") + 1) == 0
 		&& cmd->num_cmds == 2) {
