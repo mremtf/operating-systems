@@ -203,7 +203,6 @@ bool read_matrix (const char* matrix_input_filename, Matrix_t** m) {
 		printf("FAILURE 1\n");
 		return false;
 	}
-	
 	char name_buffer[50];
 	if (read (fd,name_buffer,sizeof(char) * name_len) != sizeof(char) * name_len) {
 		return false;	
@@ -218,6 +217,7 @@ bool read_matrix (const char* matrix_input_filename, Matrix_t** m) {
 
 		return false;
 	}
+
 	unsigned int numberOfDataBytes = rows * cols * sizeof(unsigned int);
 	unsigned int *data = calloc(rows * cols, sizeof(unsigned int));
 	if (read(fd,data,numberOfDataBytes) != numberOfDataBytes) {
@@ -264,7 +264,7 @@ bool write_matrix (const char* matrix_output_filename, Matrix_t* m) {
 	memcpy(&output_buffer[offset],&m->cols,sizeof(unsigned int));
 	offset += sizeof(unsigned int);
 	memcpy (&output_buffer[offset],m->data,m->rows * m->cols * sizeof(unsigned int));
-	offset += m->rows * m->cols * sizeof(unsigned int);
+	offset += (m->rows * m->cols * sizeof(unsigned int));
 	output_buffer[numberOfBytes - 1] = EOF;
 
 	if (write(fd,output_buffer,numberOfBytes) != numberOfBytes) {
@@ -385,7 +385,7 @@ bool random_matrix(Matrix_t* m, unsigned int start_range, unsigned int end_range
 /*Protected Functions in C*/
 
 void load_matrix (Matrix_t* m, unsigned int* data) {
-	memcpy(m->data,data,m->rows * m->cols);
+	memcpy(m->data,data,m->rows * m->cols * sizeof(unsigned int));
 }
 
 unsigned int add_matrix (Matrix_t* mats, Matrix_t* new_matrix, unsigned int num_mats) {
