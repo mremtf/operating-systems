@@ -1,8 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdbool.h>
-
+#include "../include/bitmap.h"
 
 struct bitmap {
     uint8_t* data;
@@ -24,31 +20,25 @@ uint8_t* bitmap_get_data(bitmap_t* bitmap) { return bitmap->data; }
 
 void bitmap_reset(bitmap_t* bitmap, uint8_t pattern) { memset(bitmap->data, pattern, byte_count); }
 
-bool bitmap_initialize(bitmap_t** bitmap, size_t n_bits, uint8_t pattern) {
+bool bitmap_initialize(bitmap_t* bitmap, size_t n_bits) {
     if (bitmap) {
         if (n_bits) { // must be non-zero
-            *bitmap = (bitmap_t*)malloc(sizeof(bitmap_t));
-            if (*bitmap) {
-                (*bitmap)->bit_count = n_bits;
-                (*bitmap)->byte_count = n_bits >> 3;
-                (*bitmap)->byte_count += (n_bits & 0x07 ? 1 : 0);
-                (*bitmap)->data = (uint8_t*)malloc(byte_count);
+            bitmap->bit_count = n_bits;
+            bitmap->byte_count = n_bits >> 3;
+            bitmap->byte_count += (n_bits & 0x07 ? 1 : 0);
+            bitmap->data = (uint8_t*)calloc(byte_count,1);
 
-                if ((*bitmap)->data) {
-                    memset((*bitmap)data, pattern, byte_count);
-                    return true;
-                }
-                free((*bitmap)->data);
-                free(*bitmap);
+            if (bitmap->data) {
+                return true;
             }
         }
     }
     return false;
 }
 
-bool bitmap_import(bitmap_t** bitmap, size_t n_bits, uint8_t* bitmap_data) {
+bool bitmap_import(bitmap_t* bitmap, size_t n_bits, uint8_t* bitmap_data) {
     if (bitmap_initialize(bitmap, n_bits, 0x00)) {
-        memcpy((*bitmap)->data, bitmap_data, (*bitmap)->byte_count);
+        memcpy(bitmap->data, bitmap_data, bitmap->byte_count);
         return true;
     }
     return false;
@@ -57,6 +47,5 @@ bool bitmap_import(bitmap_t** bitmap, size_t n_bits, uint8_t* bitmap_data) {
 void bitmap_destroy(bitmap_t* bitmap) {
     if (bitmap) {
         free(bitmap->data);
-        free(bitmap);
     }
 }

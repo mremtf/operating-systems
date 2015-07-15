@@ -9,8 +9,8 @@ struct dynamic_array {
 };
 
 // Supports 64bit+ size_t! Capping at the largest power of two size_t can store.
-// We'll run out of memory before we hit the cap. And rollover size_t (see below), unless we're storing bytes.
-#define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 1))
+// Semi-arbitrary cap on contents. We'll run out of memory before this happens anyway.
+#define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 8))
 
 // Safety functions from when I was concerned size_t may overflow
 // Taking them out because trying to cover all the edge cases was killing me
@@ -57,8 +57,8 @@ bool dyn_request_size_increase(dynamic_array_t *dyn_array, size_t increment);
 
 /* public function definitions */
 
-dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size, void (*destruct_func)(void *)) {
-    if (data_type_size) {
+bool dynamic_array_initialize(dynamic_array_t *dyn_array, size_t capacity, size_t data_type_size, void (*destruct_func)(void *)) {
+    if (dyn_array && data_type_size) {
         // Check if req capacity is too high
         if (capacity <= DYN_MAX_CAPACITY) {
             // would have inf loop if requested size was between DYN_MAX_CAPACITY
@@ -66,31 +66,21 @@ dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size
             size_t actual_capacity = 16;
             while (capacity > actual_capacity) {actual_capacity <<= 1;}
             capacity = actual_capacity;
-            // If data_type_size * capacity > MAX_SIZE, our malloc request size will rollover
-            // and that's bad
-            //if (!MULTIPLY_MAY_OVERFLOW(capacity, data_type_size)) {
-            dynamic_array_t *dyn_array = (dynamic_array_t *) malloc(sizeof(dynamic_array_t));
-            if (dyn_array) {
-                // malloc worked, woo hoo (at least the first did)
-                // TODO: Stack unwinding with gotos?
-                // (nvm, not enough resources to bother with that)
-                dyn_array->capacity = capacity;
-                dyn_array->size = 0;
-                dyn_array->data_size = data_type_size;
-                dyn_array->destructor = destruct_func;
 
-                dyn_array->array = malloc(data_type_size * capacity);
-                if (dyn_array->array) {
-                    // other malloc worked, yay!
-                    // we're done?
-                    return dyn_array;
-                } else {
-                    free(dyn_array);
-                }
+            dyn_array->capacity = capacity;
+            dyn_array->size = 0;
+            dyn_array->data_size = data_type_size;
+            dyn_array->destructor = destruct_func;
+
+            dyn_array->array = malloc(data_type_size * capacity);
+            if (dyn_array->array) {
+                // other malloc worked, yay!
+                // we're done?
+                return true;
             }
         }
     }
-    return NULL;
+    return false;
 }
 
 void dynamic_array_destroy(dynamic_array_t *dyn_array) {

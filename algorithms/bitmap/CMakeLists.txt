@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8.11)
-project (BitMap)
+project (bitmap)
 
 include_directories (${CMAKE_CURRENT_DIRECTORY}/include)
 set (CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -g -std=c99 -Wall")
-add_executable (tester.c src/tester.c src/bitmap.c)
+add_executable (test test/test.c src/bitmap.c)

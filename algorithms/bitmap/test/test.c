@@ -1,7 +1,8 @@
-#ifndef BITMAP_H__
-#define BITMAP_H__
+#include "../include/bitmap.h"
 
-typedef struct bitmap bitmap_t;
+#include <assert.h>
+
+/*
 
 // Sets requested bit in bitmap
 void bitmap_set(bitmap_t* bitmap, size_t bit);
@@ -37,5 +38,4 @@ bool bitmap_initialize(bitmap_t** bitmap, size_t n_bits, uint8_t pattern);
 // Destructs and frees bitmap
 void bitmap_destroy(bitmap_t* bitmap);
 
-
-#endif
+*/
