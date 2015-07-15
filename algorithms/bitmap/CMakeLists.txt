@@ -3,4 +3,4 @@ project (bitmap)
 
 include_directories (${CMAKE_CURRENT_DIRECTORY}/include)
 set (CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -g -std=c99 -Wall")
-add_executable (test test/test.c src/bitmap.c)
+add_executable (test test/test.c)
