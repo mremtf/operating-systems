@@ -10,7 +10,9 @@ struct dynamic_array {
 
 // Supports 64bit+ size_t! Capping at the largest power of two size_t can store.
 // Semi-arbitrary cap on contents. We'll run out of memory before this happens anyway.
+#ifndef DYN_MAX_CAPACITY
 #define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 8))
+#endif
 
 // Safety functions from when I was concerned size_t may overflow
 // Taking them out because trying to cover all the edge cases was killing me
@@ -55,12 +57,11 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
 bool dyn_request_size_increase(dynamic_array_t *dyn_array, size_t increment);
 
 
-/* public function definitions */
 
-bool dynamic_array_initialize(dynamic_array_t *dyn_array, size_t capacity, size_t data_type_size, void (*destruct_func)(void *)) {
-    if (dyn_array && data_type_size) {
-        // Check if req capacity is too high
-        if (capacity <= DYN_MAX_CAPACITY) {
+dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size, void (*destruct_func)(void *)) {
+    if (data_type_size && capacity <= DYN_MAX_CAPACITY) {
+        dynamic_array_t *dyn_array = (dynamic_array_t *) malloc(sizeof(dynamic_array_t));
+        if (dyn_array) {
             // would have inf loop if requested size was between DYN_MAX_CAPACITY
             // and SIZE_MAX
             size_t actual_capacity = 16;
@@ -72,15 +73,16 @@ bool dynamic_array_initialize(dynamic_array_t *dyn_array, size_t capacity, size_
             dyn_array->data_size = data_type_size;
             dyn_array->destructor = destruct_func;
 
-            dyn_array->array = malloc(data_type_size * capacity);
+            dyn_array->array = (uint8_t *) malloc(data_type_size * capacity);
             if (dyn_array->array) {
                 // other malloc worked, yay!
                 // we're done?
-                return true;
+                return dyn_array;
             }
         }
+        free(dyn_array);
     }
-    return false;
+    return NULL;
 }
 
 void dynamic_array_destroy(dynamic_array_t *dyn_array) {

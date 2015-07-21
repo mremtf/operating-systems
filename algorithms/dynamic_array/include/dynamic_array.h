@@ -7,16 +7,16 @@
 #include <stdint.h>
 
 typedef struct dynamic_array dynamic_array_t;
-// Next version, push/pop_N_back/front fro bulk loading
+// Next version, push/pop_N_back/front for bulk loading
 // Erase_n
 // etc
 
 
 // Initializes a dyn_array with the desired capacity (not size!), object size, and optional destructor (NULL to disable)
-bool dynamic_array_initialize(dynamic_array_t *dyn_array, size_t capacity, size_t data_type_size, void (*destruct_func)(void *));
+dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size, void (*destruct_func)(void *));
 
 // Deconstructs dynamic array, applying optional destructor to remaining elements
-void dynamic_array_destroy(dynamic_array_t *dyn_array);
+void dynamic_array_destroy(dynamic_array_t *const dyn_array);
 
 
 
