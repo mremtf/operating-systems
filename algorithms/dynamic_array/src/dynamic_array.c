@@ -11,7 +11,7 @@ struct dynamic_array {
 // Supports 64bit+ size_t! Capping at the largest power of two size_t can store.
 // Semi-arbitrary cap on contents. We'll run out of memory before this happens anyway.
 #ifndef DYN_MAX_CAPACITY
-#define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 8))
+    #define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 8))
 #endif
 
 // Safety functions from when I was concerned size_t may overflow
@@ -49,7 +49,7 @@ struct dynamic_array {
 
 
 /* private function prototypes */
-typedef enum {CREATE_GAP, FILL_GAP, FILL_GAP_DESTRUCT} DYN_SHIFT_MODE;
+typedef enum {CREATE_GAP = 0x01, FILL_GAP = 0x02, FILL_GAP_DESTRUCT = 0x06} DYN_SHIFT_MODE;
 
 bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode);
 
@@ -96,6 +96,7 @@ void dynamic_array_destroy(dynamic_array_t *dyn_array) {
             }
         }
         free(dyn_array->array);
+        dyn_array->array = NULL;
         // Bad/dangerous assumption, don't make it
         //free(dyn_array);
     }
@@ -204,8 +205,7 @@ void *dynamic_array_at(const dynamic_array_t *const dyn_array, size_t index) {
     return NULL;
 }
 
-bool dynamic_array_insert(dynamic_array_t *const dyn_array, size_t index,
-                          void *object) {
+bool dynamic_array_insert(dynamic_array_t *const dyn_array, size_t index, void *object) {
     // putting object at INDEX
     // so we shift a gap at INDEX
     if (object && dyn_shift(dyn_array, index, 1, CREATE_GAP)) {
@@ -223,8 +223,7 @@ void dynamic_array_erase(dynamic_array_t *const dyn_array, size_t index) {
     dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT);
 }
 
-bool dynamic_array_extract(const dynamic_array_t *const dyn_array, size_t index,
-                           void *object) {
+bool dynamic_array_extract(dynamic_array_t *const dyn_array, size_t index, void *object) {
     if (dyn_array && object && dyn_array->size > index) {
         memcpy(object,
                DYN_ARRAY_POSITION(dyn_array, index),
@@ -240,21 +239,12 @@ bool dynamic_array_extract(const dynamic_array_t *const dyn_array, size_t index,
 
 void dynamic_array_clear(dynamic_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
-        if (dyn_array->destructor) {
-            for (uint8_t *array_itr = dyn_array->array;
-                    dyn_array->size;
-                    --(dyn_array->size), array_itr += dyn_array->data_size) {
-                dyn_array->destructor(array_itr);
-            }
-        }
-        // duplicate if we didn't have a destructor
-        // but faster than more complex logic
-        dyn_array->size = 0;
+        dyn_shift(dyn_array, 0, dyn_array->size, FILL_GAP_DESTRUCT);
     }
 }
 
 bool dynamic_array_empty(dynamic_array_t *const dyn_array) {
-    return dyn_array_size(dyn_array);
+    return dynamic_array_size(dyn_array) == 0;
 }
 
 size_t dynamic_array_size(const dynamic_array_t *const dyn_array) {
@@ -295,24 +285,38 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
     // This function will check ranges and sizes, it should be safe to pass parameters to this without checking them first.
     // This enables us to have one function that handles error checking and will be more maintainable, hopefully
 
-    if (dyn_array && count && ((position + count) <= size)) {
-        // dyn good, count ok, pos+count isn't crazy
-        switch (mode) {
-            case FILL_GAP_DESTRUCT:
-                if (dyn_array->destructor) {
-                    uint8_t *dest_pos = DYN_ARRAY_POSITION(dyn_array, position);
-                    for (size_t total = count; total; --total, dest_pos += dyn_array->data_size) {
-                        dyn_array->destructor(dest_pos);
+
+    if (dyn_array && count) {
+        // dyn good, count ok
+        if (mode == CREATE_GAP) {
+            // may or may not need to increase capacity.
+            // We'll ask the capacity function if we can do it.
+            // If we can, do it. If not... Too bad for the user.
+            if (dyn_request_size_increase(dyn_array, count)) {
+                if (position != dyn_array->size) { // wasn't a gap at the end, we need to move data
+                    memmove(DYN_ARRAY_POSITION(dyn_array, position + count),
+                            DYN_ARRAY_POSITION(dyn_array, position),
+                            DYN_SIZE_N_ELEMS(dyn_array, dyn_array->size - position));
+                }
+                dyn_array->size += count;
+                return true;
+            }
+        } else if (mode & 0x02) { // mode = FILL_GAP_DESTRUCT || FILL_GAP
+            // shrinking in size
+            // nice and simple (?)
+
+            // verify size and range
+            if ((position + count) <= dyn_array->size) {
+                if (mode == FILL_GAP_DESTRUCT && dyn_array->destructor) { // destruct AND HAVE DESTRUCTOR
+                    uint8_t *arr_pos = DYN_ARRAY_POSITION(dyn_array, position);
+                    for (size_t total = count; total; --total, arr_pos += dyn_array->data_size) {
+                        dyn_array->destructor(arr_pos);
                     }
                 }
-            case FILL_GAP:
-                // shrinking in size
-                // nice and simple (?)
-
                 // pointer arithmatic on void pointers is illegal nowadays :C
                 // GCC allows it for compatability, other provide it for GCC compatability. Way to implement a standard.
                 // It should be cast to some sort of byte pointer, which is a pain. Hooray for macros
-                if (position + count < size) {
+                if (position + count < dyn_array->size) {
                     // there's a actual gap, not just a hole to make at the end
                     memmove(DYN_ARRAY_POSITION(dyn_array, position),
                             DYN_ARRAY_POSITION(dyn_array, position + count),
@@ -321,23 +325,7 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
                 // decrease the size and return
                 dyn_array->size -= count;
                 return true;
-            case CREATE_GAP:
-                // may or may not need to increase capacity.
-                // We'll ask the capacity function if we can do it.
-                // If we can, do it. If not... Too bad for the user.
-                if (dyn_request_size_increase(dyn_array, count)) {
-                    if (position != dyn_array->size) {
-                        // wasn't a gap at the end, we need to move data
-                        memmove(DYN_ARRAY_POSITION(dyn_array, position + count),
-                                DYN_ARRAY_POSITION(dyn_array, position),
-                                DYN_SIZE_N_ELEMS(dyn_array, dyn_array->size - position));
-                    }
-                    dyn_array->size += count;
-                    return true;
-                }
-                return false;
-            default:
-                // ...what?
+            }
         }
     }
     return false;
@@ -350,16 +338,16 @@ bool dyn_request_size_increase(dynamic_array_t *dyn_array, size_t increment) {
     if (dyn_array) {
         //if (!ADDITION_MAY_OVERFLOW(dyn_array->size, increment)) {
         // increment is ok, but is the capacity?
-        if (capacity >= (dyn_array->size + increment)) {
+        if (dyn_array->capacity >= (dyn_array->size + increment)) {
             // capacity is ok!
             return true;
         }
         // have to reallocate, is that even possible?
-        size_t capacity_increase = 0, needed_size = dyn_array->size + increment;
-        while ((dyn_array->capacity << capacity_increase) != DYN_MAX_CAPACITY && dyn_array->capacity < needed_size) {++capacity_increase;}
-        // if capacity_increase is 0, we can't increase capacity because we are at max
-        if (capacity_increase) {
-            size_t new_capacity = dyn_array->capacity << capacity_increase;
+        size_t needed_size = dyn_array->size + increment;
+        if (needed_size <= DYN_MAX_CAPACITY) {
+            size_t new_capacity = dyn_array->capacity << 1;
+            while (new_capacity < needed_size) {new_capacity <<= 1;}
+
             // we can theoretically hold this, check if we can allocate that
             //if (!MULTIPLY_MAY_OVERFLOW(new_capacity, dyn_array->data_size)) {
             // we won't overflow, so we can at least REQUEST this change

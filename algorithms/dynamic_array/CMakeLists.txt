@@ -3,4 +3,5 @@ project (DynamicArray)
 
 include_directories (${CMAKE_CURRENT_DIRECTORY}/include)
 set (CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -g -std=c99 -Wall")
-add_executable (test test/test.c)
+# TODO: don't put debug symbols in compiled library code! (?)
+add_executable (test test/tester.c)
