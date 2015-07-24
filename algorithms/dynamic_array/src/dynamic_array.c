@@ -161,7 +161,7 @@ bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *object) {
         //dyn_shift(dynamic_array_t* dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode)
         if (dyn_shift(dyn_array, dyn_array->size, 1, CREATE_GAP)) {
             // memcpy
-            memcpy(DYN_ARRAY_POSITION(dyn_array, dyn_array->size),
+            memcpy(DYN_ARRAY_POSITION(dyn_array, dyn_array->size - 1),
                    object,
                    dyn_array->data_size);
             return true;

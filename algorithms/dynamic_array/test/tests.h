@@ -47,10 +47,11 @@
 
     bool dynamic_array_extract_front(dynamic_array_t *const dyn_array, void *object);
         1. NORMAL, size = 1
-        2. Normal, size > 1
-        3. FAIL, size = 0
-        4. FAIL, null array
-        5. FAIL, null object
+        2. NORMAL, size > 1
+        3. NORMAL, with destructor, assert not destructed
+        4. FAIL, size = 0
+        5. FAIL, null array
+        6. FAIL, null object
 
 
     void *dynamic_array_back(dynamic_array_t *const dyn_array);
@@ -79,10 +80,11 @@
 
     bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *object);
         1. NORMAL, size = 1
-        2. Normal, size > 1
-        3. FAIL, size = 0
-        4. FAIL, null array
-        5. FAIL, null object
+        2. NORMAL, size > 1
+        3. NORMAL, with destructor, assert not destructed
+        4. FAIL, size = 0
+        5. FAIL, null array
+        6. FAIL, null object
 
 
     void *dynamic_array_at(const dynamic_array_t *const dyn_array, size_t index);
@@ -122,12 +124,14 @@
     bool dynamic_array_extract(dynamic_array_t *const dyn_array, size_t index, void *object);
         1. NORMAL, front
         2. NORMAL, back
-        3. NORMAL, arbitrary (assert not destructed)
-        4. NORMAL, size = 1
-        5. FAIL, size = 0, idx = 0
-        6. FAIL, size = 0, idx = 1
-        7. FAIL, null array
-        8. FAIL, null object
+        3. NORMAL, arbitrary
+        4. NORMAL, with destructor, assert not destructed
+        5. FAIL, empty, idx = 0
+        6. FAIL, empty, idx = 1
+        7. FAIL, idx = size
+        8. FAIL, idx > size
+        9. FAIL, null ptr
+        10.FAIL, null array
 
 
     void dynamic_array_clear(dynamic_array_t *const dyn_array);
@@ -152,7 +156,7 @@
 // modded a bit so it dies when false
 // Kinda funny it gets mad about abort() being void
 
-bool die(){
+bool die() {
     // so we can break on die and still have a useable stack to debug on
     // and we still have a core dump if it wasn't being debugged
     abort();
@@ -163,7 +167,8 @@ bool die(){
                    (printf("%s,%d: assertion '%s' failed\n",__FILE__, __LINE__, #e), \
                     fflush(stdout), die()))
 
-uint8_t DATA_BLOCKS[6][100];
+#define DATA_BLOCK_SIZE 100
+uint8_t DATA_BLOCKS[6][DATA_BLOCK_SIZE];
 int destruct_counter = 0;
 
 void block_destructor(void *block) {
@@ -186,6 +191,9 @@ void run_basic_tests_a();
 
 // PUSH_BACK, POP_FRONT, POP_BACK, EXTRACT_FRONT, EXTRACT_BACK
 void run_basic_tests_b();
+
+// INSERT, EXTRACT, ERASE
+void run_basic_tests_c();
 
 void run_tests() {
     init_data_blocks();
@@ -287,7 +295,7 @@ void run_basic_tests_a() {
     // PUSH_FRONT, FRONT, SIZE, CLEAR, DESTRUCTOR
     // so basic operations can be used
 
-    dyn_a = dynamic_array_initialize(0, sizeof(DATA_BLOCKS[0]), NULL);
+    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
 
     // 2 & 3 FRONT
@@ -305,7 +313,7 @@ void run_basic_tests_a() {
     // 2 PUSH_FRONT
     assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[0]));
     assert(dyn_a->size == 1);
-    assert(memcmp(dyn_a->array, DATA_BLOCKS[0], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
 
     // 1 EMPTY
     assert(dynamic_array_empty(dyn_a) == false);
@@ -316,7 +324,7 @@ void run_basic_tests_a() {
 
     // 1 FRONT
     assert(dynamic_array_front(dyn_a) == dyn_a->array);
-    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[0], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
 
     // FRONT TESTS COMPLETE
 
@@ -324,7 +332,7 @@ void run_basic_tests_a() {
     assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[1]));
     assert(dynamic_array_size(dyn_a) == 2);
     assert(dynamic_array_front(dyn_a) == dyn_a->array);
-    assert(memcmp(dyn_a->array, DATA_BLOCKS[1], sizeof(DATA_BLOCKS[1])) == 0);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
 
     // 4 & 5 PUSH_FRONT
     assert(dynamic_array_push_front(NULL, DATA_BLOCKS[1]) == false);
@@ -346,7 +354,7 @@ void run_basic_tests_a() {
     // 7 AT
     assert(dynamic_array_at(dyn_a, 1) == NULL);
 
-    dyn_b = dynamic_array_initialize(0, sizeof(DATA_BLOCKS[0]), &block_destructor);
+    dyn_b = dynamic_array_initialize(0, DATA_BLOCK_SIZE, &block_destructor);
     assert(dyn_b);
     // 2 BACK
     assert(dynamic_array_back(dyn_b) == NULL);
@@ -372,17 +380,17 @@ void run_basic_tests_a() {
 
     // 1 AT
     assert(dynamic_array_at(dyn_a, 0) == dynamic_array_front(dyn_a));
-    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[2], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
     // 2 AT
     // 1 BACK
     assert(dynamic_array_at(dyn_a, 2) == dynamic_array_back(dyn_a));
-    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[0], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
 
     // BACK TESTS COMPLETE
 
     // 3 AT
     assert(dynamic_array_at(dyn_a, 1));
-    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[1], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
 
     // 4 AT
     assert(dynamic_array_at(dyn_a, 3) == NULL);
@@ -403,7 +411,7 @@ void run_basic_tests_a() {
 
     // DESTRUCTOR TESTS COMPLETE
 
-    dyn_a = dynamic_array_initialize(0, sizeof(DATA_BLOCKS[0]), NULL);
+    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
     while (dyn_a->size != 16) {
         assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[0]));
@@ -412,7 +420,7 @@ void run_basic_tests_a() {
     assert(dyn_a->size == 16);
     assert(dyn_a->capacity == 16);
     assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[1]));
-    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
     assert(dyn_a->size == 17);
     assert(dyn_a->capacity == 32);
 
@@ -425,7 +433,7 @@ void run_basic_tests_a() {
     assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[1]) == false);
     assert(dyn_a->size == DYN_MAX_CAPACITY);
     assert(dyn_a->capacity == DYN_MAX_CAPACITY);
-    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[0], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
 
     // PUSH_FRONT TESTS COMPLETE
 
@@ -437,9 +445,9 @@ void run_basic_tests_b() {
     destruct_counter = 0;
     dynamic_array_t *dyn_a, *dyn_b;
 
-    dyn_a = dynamic_array_initialize(0, sizeof(DATA_BLOCKS[0]), NULL);
+    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
-    dyn_b = dynamic_array_initialize(0, sizeof(DATA_BLOCKS[0]), &block_destructor);
+    dyn_b = dynamic_array_initialize(0, DATA_BLOCK_SIZE, &block_destructor);
     assert(dyn_b);
 
     // 2 POP_FRONT
@@ -449,7 +457,7 @@ void run_basic_tests_b() {
 
     dynamic_array_pop_front(dyn_a);
     assert(dyn_a->size == 1);
-    assert(memcmp(dyn_a->array, DATA_BLOCKS[0], sizeof(DATA_BLOCKS[0])) == 0);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
 
     // 1 POP_FRONT
     dynamic_array_pop_front(dyn_a);
@@ -471,5 +479,373 @@ void run_basic_tests_b() {
 
     // POP_FRONT TESTS COMPLETE
 
+    // 2 PUSH_BACK
+    assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[2]));
+    assert(dyn_a->size == 1);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+
+    // 1 PUSH_BACK
+    assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[3]));
+    assert(dyn_a->size == 2);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+
+    while (dynamic_array_size(dyn_a) != 16) {
+        assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[3]));
+    }
+    assert(dyn_a->capacity == 16);
+
+    // 5 PUSH_BACK
+    assert(dynamic_array_push_back(dyn_a, NULL) == false);
+    assert(dyn_a->size == 16);
+    assert(dyn_a->capacity == 16);
+
+    // 3 PUSH_BACK
+    assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[4]));
+    assert(dyn_a->size == 17);
+    assert(dyn_a->capacity == 32);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[4], DATA_BLOCK_SIZE) == 0);
+
+    // 4 PUSH_BACK
+    assert(dynamic_array_push_back(NULL, DATA_BLOCKS[0]) == false);
+    assert(dyn_a->size == 17);
+
+    // 6 PUSH_BACK
+    while (dyn_a->size != DYN_MAX_CAPACITY) {
+        assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[4]));
+    }
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[4], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->capacity == DYN_MAX_CAPACITY);
+    assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[5]) == false);
+    assert(dyn_a->size == DYN_MAX_CAPACITY);
+    assert(dyn_a->capacity == DYN_MAX_CAPACITY);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[4], DATA_BLOCK_SIZE) == 0);
+
+    // PUSH_BACK TESTS COMPLETE
+
+    dynamic_array_clear(dyn_a);
+    assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[0]));
+    assert(dynamic_array_push_front(dyn_b, DATA_BLOCKS[0]));
+    assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[1]));
+    assert(dynamic_array_push_front(dyn_b, DATA_BLOCKS[1]));
+
+    // 2 POP_BACK
+    dynamic_array_pop_back(dyn_a);
+    assert(dyn_a->size == 1);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+
+    // 1 POP_BACK
+    dynamic_array_pop_back(dyn_a);
+    assert(dyn_a->size == 0);
+
+    // 3 POP_BACK
+    dynamic_array_pop_back(dyn_a);
+    assert(dyn_a->size == 0);
+
+    // 4 POP_BACK
+    dynamic_array_pop_back(dyn_b);
+    assert(dyn_b->size == 1);
+    assert(memcmp(dynamic_array_back(dyn_b), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(destruct_counter == 1);
+    destruct_counter = 0;
+    dynamic_array_pop_back(dyn_b);
+    assert(dyn_b->size == 0);
+    assert(destruct_counter == 1);
+    destruct_counter = 0;
+
+    // 5 POP_BACK
+    dynamic_array_pop_back(NULL);
+
+    // POP_BACK TESTS COMPLETE
+
+    uint8_t extraction_point[DATA_BLOCK_SIZE];
+
+    assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[0]));
+    assert(dynamic_array_push_front(dyn_b, DATA_BLOCKS[0]));
+    assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[1]));
+    assert(dynamic_array_push_front(dyn_b, DATA_BLOCKS[1]));
+
+    // 2 EXTRACT_FRONT
+    assert(dynamic_array_extract_front(dyn_a, extraction_point));
+    assert(dyn_a->size == 1);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+
+    // 1 EXTRACT_FRONT
+    assert(dynamic_array_extract_front(dyn_a, extraction_point));
+    assert(dyn_a->size == 0);
+    assert(memcmp(extraction_point, DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 3 EXTRACT_FRONT
+    assert(dynamic_array_extract_front(dyn_b, extraction_point));
+    assert(dyn_b->size == 1);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(destruct_counter == 0);
+
+    // 4 EXTRACT_FRONT
+    assert(dynamic_array_extract_front(dyn_a, extraction_point) == false);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 0);
+
+    // 5 EXTRACT_FRONT
+    assert(dynamic_array_extract_front(NULL, extraction_point) == false);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+
+    // 6 EXTRACT_FRONT
+    assert(dynamic_array_extract_front(dyn_a, NULL) == false);
+    assert(dyn_a->size == 0);
+
+    dynamic_array_clear(dyn_b);
+    destruct_counter = 0;
+
+    // EXTRACT_FRONT TESTS COMPLETE
+
+    assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[0]));
+    assert(dynamic_array_push_back(dyn_b, DATA_BLOCKS[0]));
+    assert(dynamic_array_push_back(dyn_a, DATA_BLOCKS[1]));
+    assert(dynamic_array_push_back(dyn_b, DATA_BLOCKS[1]));
+
+    // 2 EXTRACT_BACK
+    assert(dynamic_array_extract_back(dyn_a, extraction_point));
+    assert(dyn_a->size == 1);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+
+    // 1 EXTRACT_BACK
+    assert(dynamic_array_extract_back(dyn_a, extraction_point));
+    assert(dyn_a->size == 0);
+    assert(memcmp(extraction_point, DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 3 EXTRACT_BACK
+    assert(dynamic_array_extract_back(dyn_b, extraction_point));
+    assert(dyn_b->size == 1);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(destruct_counter == 0);
+
+    // 4 EXTRACT_BACK
+    assert(dynamic_array_extract_back(dyn_a, extraction_point) == false);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 0);
+
+    // 5 EXTRACT_BACK
+    assert(dynamic_array_extract_back(NULL, extraction_point) == false);
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+
+    // 6 EXTRACT_BACK
+    assert(dynamic_array_extract_back(dyn_a, NULL) == false);
+    assert(dyn_a->size == 0);
+
+    dynamic_array_destroy(dyn_a);
+    dynamic_array_destroy(dyn_b);
+    destruct_counter = 0;
+
+    // EXTRACT_BACK TESTS COMPLETE
+
+}
+
+// INSERT, EXTRACT, ERASE
+void run_basic_tests_c() {
+    dynamic_array_t *dyn_a, *dyn_b;
+    uint8_t extraction_point[DATA_BLOCK_SIZE];
+    destruct_counter = 0;
+
+    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
+    assert(dyn_a);
+    dyn_b = dynamic_array_initialize(0, DATA_BLOCK_SIZE, &block_destructor);
+    assert(dyn_b);
+
+    // 4 INSERT
+    assert(dynamic_array_insert(dyn_a, 0, DATA_BLOCKS[0]));
+    assert(dyn_a->size == 1);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 1 INSERT
+    assert(dynamic_array_insert(dyn_a, 0, DATA_BLOCKS[1]));
+    assert(dyn_a->size == 2);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 2 INSERT
+    assert(dynamic_array_insert(dyn_a, 1, DATA_BLOCKS[1]));
+    assert(dyn_a->size == 2);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 3 INSERT
+    assert(dynamic_array_insert(dyn_a, 1, DATA_BLOCKS[2]));
+    assert(dyn_a->size == 2);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 5 INSERT
+    assert(dynamic_array_insert(dyn_b, 1, DATA_BLOCKS[0]) == false);
+    assert(dyn_a->size == 0);
+
+    // 6 INSERT
+    assert(dynamic_array_insert(dyn_a, 3, DATA_BLOCKS[5]) == false);
+    assert(dyn_a->size == 2);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 7 INSERT
+    assert(dynamic_array_insert(dyn_a, 0, NULL) == false);
+    assert(dyn_a->size == 2);
+    assert(memcmp(dynamic_array_front(dyn_a), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_back(dyn_a), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+
+    // 8 INSERT
+    assert(dynamic_array_insert(NULL, 0, DATA_BLOCKS[0]) == false);
+
+    // INSERT TESTS COMPLETE
+
+    dynamic_array_clear(dyn_a);
+    dynamic_array_clear(dyn_b);
+    destruct_counter = 0;
+
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[0]);
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[1]);
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[2]);
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[3]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[0]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[1]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[2]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[3]);
+
+    // 1 ERASE
+    dynamic_array_erase(dyn_a, 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 3);
+
+    // 3 ERASE
+    dynamic_array_erase(dyn_a, 1);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 2);
+
+    // 2 ERASE
+    dynamic_array_erase(dyn_a, 1);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 1);
+
+    dynamic_array_pop_back(dyn_a);
+    // 4 ERASE
+    dynamic_array_erase(dyn_b, 2);
+    assert(destruct_counter == 1);
+    destruct_counter = 0;
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_b->size == 3);
+
+    // 5 ERASE
+    dynamic_array_erase(dyn_a, 0);
+    assert(dyn_a->size == 0);
+
+    // 6 ERASE
+    dynamic_array_erase(dyn_a, 1);
+    assert(dyn_a->size == 0);
+
+    // 7 ERASE
+    dynamic_array_erase(dyn_b, 3);
+    assert(destruct_counter == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_b->size == 3);
+
+    // 8 ERASE
+    dynamic_array_erase(dyn_b, 4);
+    assert(destruct_counter == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_b->size == 3);
+
+    // 9 ERASE
+    dynamic_array_erase(NULL, 0);
+
+    // ERASE TESTS COMPLETE
+
+    dynamic_array_clear(dyn_a);
+    dynamic_array_clear(dyn_b);
+    destruct_counter = 0;
+
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[0]);
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[1]);
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[2]);
+    dynamic_array_push_back(dyn_a, DATA_BLOCKS[3]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[0]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[1]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[2]);
+    dynamic_array_push_back(dyn_b, DATA_BLOCKS[3]);
+
+    // 1 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 0, extraction_point));
+    assert(memcmp(extraction_point, DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 2), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 3);
+
+    // 3 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 1, extraction_point));
+    assert(memcmp(extraction_point, DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 1), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 2);
+
+    // 2 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 1, extraction_point));
+    assert(memcmp(extraction_point, DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 1);
+
+    // 7 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 1, extraction_point) == false);
+    assert(memcmp(extraction_point, DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 1);
+
+    // 8 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 2, extraction_point) == false);
+    assert(memcmp(extraction_point, DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_a, 0), DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_a->size == 1);
+
+    // 4 EXTRACT
+    assert(dynamic_array_extract(dyn_b, 1, extraction_point));
+    assert(memcmp(extraction_point, DATA_BLOCKS[1], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_b, 0), DATA_BLOCKS[0], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_b, 1), DATA_BLOCKS[2], DATA_BLOCK_SIZE) == 0);
+    assert(memcmp(dynamic_array_at(dyn_b, 2), DATA_BLOCKS[3], DATA_BLOCK_SIZE) == 0);
+    assert(dyn_b->size == 3);
+    assert(destruct_counter == 0);
+
+    dynamic_array_clear(dyn_a);
+
+    // 5 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 0, extraction_point) == false);
+    assert(dyn_a->size == 0);
+
+    // 6 EXTRACT
+    assert(dynamic_array_extract(dyn_a, 1, extraction_point) == false);
+    assert(dyn_a->size == 0);
+
+    // 9 EXTRACT
+    assert(dynamic_array_extract(dyn_b, 0, NULL) == false);
+    assert(dyn_b->size == 3);
+    assert(destruct_counter == 0);
+
+    // 10 EXTRACT
+    assert(dynamic_array_extract(NULL, 0, extraction_point) == false);
+
+    // EXTRACT TESTS COMPLETE
+
+    dynamic_array_destroy(dyn_a);
+    dynamic_array_destroy(dyn_b);
+    destruct_counter = 0;
 
 }
