@@ -30,6 +30,7 @@ void *dynamic_array_front(const dynamic_array_t *const dyn_array);
 bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *object);
 
 // Removes and optionally destructs the object at the front of the array, decreasing the container size by one
+// Returns false only when array is empty or NULL was given
 bool dynamic_array_pop_front(dynamic_array_t *const dyn_array);
 
 // Removes the object in the front of the array and places it in the desired location, decreasing container size
@@ -58,8 +59,8 @@ bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *object);
 // Pointer may be invalidated if the container increases in size
 void *dynamic_array_at(const dynamic_array_t *const dyn_array, size_t index);
 
-// Inserts the given object behind the given index in the array, increasing the container size by one
-// (Given object will be at position index+1)
+// Inserts the given object at the given index in the array, increasing the container size by one
+// and moving any contents at index and beyond down one
 bool dynamic_array_insert(dynamic_array_t *const dyn_array, size_t index,
                           void *object);
 
