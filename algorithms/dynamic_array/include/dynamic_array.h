@@ -30,7 +30,7 @@ void *dynamic_array_front(const dynamic_array_t *const dyn_array);
 bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *object);
 
 // Removes and optionally destructs the object at the front of the array, decreasing the container size by one
-void dynamic_array_pop_front(dynamic_array_t *const dyn_array);
+bool dynamic_array_pop_front(dynamic_array_t *const dyn_array);
 
 // Removes the object in the front of the array and places it in the desired location, decreasing container size
 // Does not destruct since it was returned to the user
@@ -46,7 +46,7 @@ void *dynamic_array_back(dynamic_array_t *const dyn_array);
 bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *object);
 
 // Removes and optionally destructs the object at the back of the array
-void dynamic_array_pop_back(dynamic_array_t *const dyn_array);
+bool dynamic_array_pop_back(dynamic_array_t *const dyn_array);
 
 // Removes the object in the back of the array and places it in the desired location
 // Does not destruct since it was returned to the user
@@ -64,7 +64,7 @@ bool dynamic_array_insert(dynamic_array_t *const dyn_array, size_t index,
                           void *object);
 
 // Removes and optionally destructs the object at the given index
-void dynamic_array_erase(dynamic_array_t *const dyn_array, size_t index);
+bool dynamic_array_erase(dynamic_array_t *const dyn_array, size_t index);
 
 // Removes the object at the given index and places it at the desired location
 // Does not destruct the object since it is returned to the user

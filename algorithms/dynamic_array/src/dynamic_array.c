@@ -86,15 +86,8 @@ dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size
 }
 
 void dynamic_array_destroy(dynamic_array_t *dyn_array) {
-    // switch to a call to shift and free?
     if (dyn_array) {
-        if (dyn_array->destructor) {
-            for (uint8_t *array_itr = (uint8_t *)dyn_array->array;
-                    dyn_array->size;
-                    --(dyn_array->size), array_itr += dyn_array->data_size) {
-                dyn_array->destructor(array_itr);
-            }
-        }
+        dynamic_array_clear(dyn_array);
         free(dyn_array->array);
         dyn_array->array = NULL;
         // Bad/dangerous assumption, don't make it
@@ -126,10 +119,10 @@ bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *object) {
     return false;
 }
 
-void dynamic_array_pop_front(dynamic_array_t *const dyn_array) {
+bool dynamic_array_pop_front(dynamic_array_t *const dyn_array) {
     // can this really ever fail? (other than NULL)
-    // No, so it's void.
-    dyn_shift(dyn_array, 0, 1, FILL_GAP_DESTRUCT);
+    // ... no. But we'll make it bool anyway. Allows for creative use.
+    return dyn_shift(dyn_array, 0, 1, FILL_GAP_DESTRUCT);
 }
 
 bool dynamic_array_extract_front(dynamic_array_t *const dyn_array, void *object) {
@@ -170,7 +163,7 @@ bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *object) {
     return false;
 }
 
-void dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
+bool dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
         // MUST assert the size for the pop_back
         // if size is zero, it will rollover (rollunder?)
@@ -180,8 +173,9 @@ void dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
         // (a memmove with src = dest, I believe)
         // (that might not cause a disaster, but the size decrement will rollover the size variable)
         // TODO: need to assert size on gap filling in dyn_shift
-        dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP_DESTRUCT);
+        return dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP_DESTRUCT);
     }
+    return false;
 }
 
 bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *object) {
@@ -217,10 +211,8 @@ bool dynamic_array_insert(dynamic_array_t *const dyn_array, size_t index, void *
     return false;
 }
 
-void dynamic_array_erase(dynamic_array_t *const dyn_array, size_t index) {
-    // Going to treat it like the pops and say it can't fail
-    // Maybe this isn't the best idea. Decision for when it's actually implemented
-    dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT);
+bool dynamic_array_erase(dynamic_array_t *const dyn_array, size_t index) {
+    return dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT);
 }
 
 bool dynamic_array_extract(dynamic_array_t *const dyn_array, size_t index, void *object) {
@@ -292,7 +284,7 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
             // may or may not need to increase capacity.
             // We'll ask the capacity function if we can do it.
             // If we can, do it. If not... Too bad for the user.
-            if (dyn_request_size_increase(dyn_array, count)) {
+            if (position <= dyn_array->size && dyn_request_size_increase(dyn_array, count)) {
                 if (position != dyn_array->size) { // wasn't a gap at the end, we need to move data
                     memmove(DYN_ARRAY_POSITION(dyn_array, position + count),
                             DYN_ARRAY_POSITION(dyn_array, position),
