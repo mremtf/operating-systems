@@ -149,6 +149,13 @@
         1. NORMAL, contents
         2. NORMAL, empty
         3. FAIL, null ptr
+
+    const void *dynamic_array_export(const dynamic_array_t *const dyn_array);
+        SEE FRONT
+
+    dynamic_array_t *dynamic_array_import(const void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *));
+        SEE INIT (capacity -> size)
+        10. FAIL, void data
 */
 
 // Shamelessly stolen from
@@ -177,6 +184,12 @@ void block_destructor(void *block) {
     ++destruct_counter;
 }
 
+void block_destructor_mini(void *block) {
+    memset(block, 0xAA, 1);
+    // right, probably can't check if the destructor ran if the memory gets freed
+    ++destruct_counter;
+}
+
 void init_data_blocks() {
     memset(DATA_BLOCKS[0], 0x11, 100);
     memset(DATA_BLOCKS[1], 0x22, 100);
@@ -195,6 +208,9 @@ void run_basic_tests_b();
 // INSERT, EXTRACT, ERASE
 void run_basic_tests_c();
 
+// EXTRACT, IMPORT, bulk moving...?
+void run_basic_tests_d();
+
 void run_tests() {
     init_data_blocks();
 
@@ -206,6 +222,9 @@ void run_tests() {
 
     // INSERT, EXTRACT, ERASE
     run_basic_tests_c();
+
+    // EXTRACT, IMPORT, bulk moving...?
+    run_basic_tests_d();
 
     puts("TESTS COMPLETE");
 }
@@ -855,4 +874,99 @@ void run_basic_tests_c() {
     dynamic_array_destroy(dyn_b);
     destruct_counter = 0;
 
+}
+
+// EXTRACT, IMPORT, bulk moving...?
+void run_basic_tests_d() {
+    // by now you've seen the tests. I don't want to make more...
+    // but I want to add features. UGH. Just copying tests from earlier and repurposing them
+    // because export is just front and import is more or less init
+
+    dynamic_array_t *dyn_a = NULL;
+
+    // 1 IMPORT & 2 EXPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[0], 0, 1, NULL);
+    assert(dyn_a);
+    assert(dyn_a->size == 0);
+    assert(dyn_a->capacity == 16);
+    assert(dyn_a->data_size == 1);
+    assert(dyn_a->destructor == NULL);
+    assert(dyn_a->array);
+    assert(dynamic_array_export(dyn_a) == NULL);
+
+    dynamic_array_destroy(dyn_a);
+
+    // 2 IMPORT & EXPORT 1
+    dyn_a = dynamic_array_import(DATA_BLOCKS[1], 15, 1, &block_destructor_mini);
+    assert(dyn_a);
+    assert(dyn_a->size == 15);
+    assert(dyn_a->capacity == 16);
+    assert(dyn_a->data_size == 1);
+    assert(dyn_a->destructor == &block_destructor_mini);
+    assert(dyn_a->array);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[1], 15) == 0);
+    assert(dynamic_array_export(dyn_a) == dyn_a->array);
+
+    dynamic_array_destroy(dyn_a);
+
+    // 3 IMPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[2], 16, 1, &block_destructor_mini);
+    assert(dyn_a);
+    assert(dyn_a->size == 16);
+    assert(dyn_a->capacity == 16);
+    assert(dyn_a->data_size == 1);
+    assert(dyn_a->destructor == &block_destructor_mini);
+    assert(dyn_a->array);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[2], 16) == 0);
+
+    dynamic_array_destroy(dyn_a);
+
+    // 4 IMPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[3], 17, 1, &block_destructor_mini);
+    assert(dyn_a);
+    assert(dyn_a->size == 17);
+    assert(dyn_a->capacity == 32);
+    assert(dyn_a->data_size == 1);
+    assert(dyn_a->destructor == &block_destructor_mini);
+    assert(dyn_a->array);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[3], 17) == 0);
+
+    dynamic_array_destroy(dyn_a);
+
+    // 5 IMPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[4], DYN_MAX_CAPACITY - 1, 1, &block_destructor_mini);
+
+    assert(dyn_a);
+    assert(dyn_a->size == DYN_MAX_CAPACITY - 1);
+    assert(dyn_a->capacity == DYN_MAX_CAPACITY);
+    assert(dyn_a->data_size == 1);
+    assert(dyn_a->destructor == &block_destructor_mini);
+    assert(dyn_a->array);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[4], DYN_MAX_CAPACITY - 1) == 0);
+
+    dynamic_array_destroy(dyn_a);
+
+    // 6 IMPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[5], DYN_MAX_CAPACITY, 1, &block_destructor_mini);
+
+    assert(dyn_a);
+    assert(dyn_a->size == DYN_MAX_CAPACITY);
+    assert(dyn_a->capacity == DYN_MAX_CAPACITY);
+    assert(dyn_a->data_size == 1);
+    assert(dyn_a->destructor == &block_destructor_mini);
+    assert(dyn_a->array);
+    assert(memcmp(dyn_a->array, DATA_BLOCKS[5], DYN_MAX_CAPACITY) == 0);
+
+    dynamic_array_destroy(dyn_a);
+
+    // 8 IMPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[0], DYN_MAX_CAPACITY + 1, 1, &block_destructor_mini);
+    assert(!dyn_a);
+
+    // 9 IMPORT
+    dyn_a = dynamic_array_import(DATA_BLOCKS[0], 16, 0, &block_destructor_mini);
+    assert(!dyn_a);
+
+    // 3 EXPORT
+    assert(dynamic_array_export(NULL) == NULL);
 }

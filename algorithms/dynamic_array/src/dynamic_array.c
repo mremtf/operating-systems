@@ -8,8 +8,9 @@ struct dynamic_array {
     void (*destructor)(void *);
 };
 
-// Supports 64bit+ size_t! Capping at the largest power of two size_t can store.
+// Supports 64bit+ size_t!
 // Semi-arbitrary cap on contents. We'll run out of memory before this happens anyway.
+// Allowing it to be externally set
 #ifndef DYN_MAX_CAPACITY
     #define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 8))
 #endif
@@ -51,14 +52,14 @@ struct dynamic_array {
 /* private function prototypes */
 typedef enum {CREATE_GAP = 0x01, FILL_GAP = 0x02, FILL_GAP_DESTRUCT = 0x06} DYN_SHIFT_MODE;
 
-bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode);
+bool dyn_shift(dynamic_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location);
 
 // Checks to see if the object can handle an increase in size (and optionally increases capacity)
-bool dyn_request_size_increase(dynamic_array_t *dyn_array, size_t increment);
+bool dyn_request_size_increase(dynamic_array_t *const dyn_array, const size_t increment);
 
 
 
-dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size, void (*destruct_func)(void *)) {
+dynamic_array_t *dynamic_array_initialize(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
     if (data_type_size && capacity <= DYN_MAX_CAPACITY) {
         dynamic_array_t *dyn_array = (dynamic_array_t *) malloc(sizeof(dynamic_array_t));
         if (dyn_array) {
@@ -66,14 +67,13 @@ dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size
             // and SIZE_MAX
             size_t actual_capacity = 16;
             while (capacity > actual_capacity) {actual_capacity <<= 1;}
-            capacity = actual_capacity;
 
-            dyn_array->capacity = capacity;
+            dyn_array->capacity = actual_capacity;
             dyn_array->size = 0;
             dyn_array->data_size = data_type_size;
             dyn_array->destructor = destruct_func;
 
-            dyn_array->array = (uint8_t *) malloc(data_type_size * capacity);
+            dyn_array->array = (uint8_t *) malloc(data_type_size * actual_capacity);
             if (dyn_array->array) {
                 // other malloc worked, yay!
                 // we're done?
@@ -83,6 +83,30 @@ dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size
         free(dyn_array);
     }
     return NULL;
+}
+
+// Creates a dynamic array from a standard array
+dynamic_array_t *dynamic_array_import(void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *)) {
+    // Oh boy I'm going to be lazy with this
+    dynamic_array_t *dyn_array = NULL;
+    // literally could not give us an overlapping pointer unless they guessed it
+    // I'd just do a memcpy here instead of dyn_shift, but the dyn_shift branch for this is
+    // short. DYN_SHIFT CANNOT fail if initialize worked properly, but we'll cleanup if it did anyway
+    if (data && (dyn_array = dynamic_array_initialize(count, data_type_size, destruct_func))) {
+        if (count && !dyn_shift(dyn_array, 0, count, CREATE_GAP, data)) {
+            dynamic_array_destroy(dyn_array);
+            dyn_array = NULL;
+        }
+    }
+    return dyn_array;
+}
+
+// Consting the pointer to discourage monkeying with it.
+// If they're smart they'll just use front() if they want to play with it
+// Or just cast off the const and make the compiler allow it
+// or memcpy the pointer's value to a non-const pointer (my favorite trick)
+const void *dynamic_array_export(const dynamic_array_t *const dyn_array) {
+    return dynamic_array_front(dyn_array);
 }
 
 void dynamic_array_destroy(dynamic_array_t *dyn_array) {
@@ -108,122 +132,85 @@ void *dynamic_array_front(const dynamic_array_t *const dyn_array) {
     return NULL;
 }
 
-bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *object) {
+bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *const object) {
     //dyn_shift(dynamic_array_t* dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode)
     // make sure to check pointer FIRST, shift does stuff to the structure that we don't want to have to undo
-    if (object && dyn_shift(dyn_array, 0, 1, CREATE_GAP)) {
-        // got auth to insert data, size was incremented and such for us
-        memcpy(dyn_array->array, object, dyn_array->data_size);
-        return true;
-    }
-    return false;
+    return object && dyn_shift(dyn_array, 0, 1, CREATE_GAP, object);
 }
 
 bool dynamic_array_pop_front(dynamic_array_t *const dyn_array) {
     // can this really ever fail? (other than NULL)
     // ... no. But we'll make it bool anyway. Allows for creative use.
-    return dyn_shift(dyn_array, 0, 1, FILL_GAP_DESTRUCT);
+    return dyn_shift(dyn_array, 0, 1, FILL_GAP_DESTRUCT, NULL);
 }
 
-bool dynamic_array_extract_front(dynamic_array_t *const dyn_array, void *object) {
+bool dynamic_array_extract_front(dynamic_array_t *const dyn_array, void *const object) {
     // making them allocate room, makes us play nice with other things
     // as opposed to forcing them to do it our way like we know best
-    if (object && dyn_array && dyn_array->size) {
-        memcpy(object, dyn_array->array, dyn_array->data_size);
-        // FILL_GAP can't have an error unless front doesn't exist,
-        // which we're suppressing (for now at least)
-        dyn_shift(dyn_array, 0, 1, FILL_GAP);
-        return true;
-    }
-    return false;
+    // FILL_GAP can't have an error unless front doesn't exist,
+    // which we're suppressing (for now at least)
+
+    return object && dyn_array && dyn_array->size && dyn_shift(dyn_array, 0, 1, FILL_GAP, object);
 }
 
 
 
 
-void *dynamic_array_back(dynamic_array_t *const dyn_array) {
+void *dynamic_array_back(const dynamic_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
         return DYN_ARRAY_POSITION(dyn_array, dyn_array->size - 1);
     }
     return NULL;
 }
 
-bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *object) {
-    if (object && dyn_array) {
-        // create gap
-        //dyn_shift(dynamic_array_t* dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode)
-        if (dyn_shift(dyn_array, dyn_array->size, 1, CREATE_GAP)) {
-            // memcpy
-            memcpy(DYN_ARRAY_POSITION(dyn_array, dyn_array->size - 1),
-                   object,
-                   dyn_array->data_size);
-            return true;
-        }
-    }
-    return false;
+bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *const object) {
+    return object && dyn_array && dyn_shift(dyn_array, dyn_array->size, 1, CREATE_GAP, object);
 }
 
 bool dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
-    if (dyn_array && dyn_array->size) {
-        // MUST assert the size for the pop_back
-        // if size is zero, it will rollover (rollunder?)
-        // and then the size and count check will roll it back to zero during the check
-        // and that will cause it to pass that check
-        // and then things will probably break.
-        // (a memmove with src = dest, I believe)
-        // (that might not cause a disaster, but the size decrement will rollover the size variable)
-        // TODO: need to assert size on gap filling in dyn_shift
-        return dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP_DESTRUCT);
-    }
-    return false;
+    // MUST assert the size for the pop_back
+    // if size is zero, it will rollover (rollunder?)
+    // and then the size and count check will roll it back to zero during the check
+    // and that will cause it to pass that check
+    // and then things will probably break.
+    // (a memmove with src = dest, I believe)
+    // (that might not cause a disaster, but the size decrement will rollover the size variable)
+
+    // NOTE: This has been fixed, but keeping it anyway because no one like rollover
+    return dyn_array && dyn_array->size &&
+           dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP_DESTRUCT, NULL);
 }
 
-bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *object) {
-    if (object && dyn_array && dyn_array->size) {
-        memcpy(object, DYN_ARRAY_POSITION(dyn_array, dyn_array->size - 1), dyn_array->data_size);
-        // FILL_GAP can't have an error unless front doesn't exist,
-        // which we're suppressing (for now at least)
-        dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP);
-        return true;
-    }
-    return false;
+bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *const object) {
+    // FILL_GAP can't have an error unless front doesn't exist,
+    // which we're suppressing (for now at least)
+    return object && dyn_array && dyn_array->size &&
+           dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP, object);
 }
 
 
 
 
-void *dynamic_array_at(const dynamic_array_t *const dyn_array, size_t index) {
+void *dynamic_array_at(const dynamic_array_t *const dyn_array, const size_t index) {
     if (dyn_array && index < dyn_array->size) {
         return DYN_ARRAY_POSITION(dyn_array, index);
     }
     return NULL;
 }
 
-bool dynamic_array_insert(dynamic_array_t *const dyn_array, size_t index, void *object) {
+bool dynamic_array_insert(dynamic_array_t *const dyn_array, const size_t index, void *const object) {
     // putting object at INDEX
     // so we shift a gap at INDEX
-    if (object && dyn_shift(dyn_array, index, 1, CREATE_GAP)) {
-        memcpy(DYN_ARRAY_POSITION(dyn_array, index),
-               object,
-               dyn_array->data_size);
-        return true;
-    }
-    return false;
+    return object && dyn_shift(dyn_array, index, 1, CREATE_GAP, object);
 }
 
-bool dynamic_array_erase(dynamic_array_t *const dyn_array, size_t index) {
-    return dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT);
+bool dynamic_array_erase(dynamic_array_t *const dyn_array, const size_t index) {
+    return dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT, NULL);
 }
 
-bool dynamic_array_extract(dynamic_array_t *const dyn_array, size_t index, void *object) {
-    if (dyn_array && object && dyn_array->size > index) {
-        memcpy(object,
-               DYN_ARRAY_POSITION(dyn_array, index),
-               dyn_array->data_size);
-        dyn_shift(dyn_array, index, 1, FILL_GAP);
-        return true;
-    }
-    return false;
+bool dynamic_array_extract(dynamic_array_t *const dyn_array, const size_t index, void *const object) {
+    return dyn_array && object && dyn_array->size > index &&
+           dyn_shift(dyn_array, index, 1, FILL_GAP, object);
 }
 
 
@@ -231,11 +218,11 @@ bool dynamic_array_extract(dynamic_array_t *const dyn_array, size_t index, void 
 
 void dynamic_array_clear(dynamic_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
-        dyn_shift(dyn_array, 0, dyn_array->size, FILL_GAP_DESTRUCT);
+        dyn_shift(dyn_array, 0, dyn_array->size, FILL_GAP_DESTRUCT, NULL);
     }
 }
 
-bool dynamic_array_empty(dynamic_array_t *const dyn_array) {
+bool dynamic_array_empty(const dynamic_array_t *const dyn_array) {
     return dynamic_array_size(dyn_array) == 0;
 }
 
@@ -251,7 +238,7 @@ size_t dynamic_array_size(const dynamic_array_t *const dyn_array) {
 
 
 /* Private Function Definitions */
-bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode) {
+bool dyn_shift(dynamic_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location) {
     // Shifts contents. Mode flag controls what happens and how (duh?)
     // So, if you erase idx 2, you're filling the gap at position two
     // [A][X][B][C][D][E]
@@ -277,10 +264,17 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
     // This function will check ranges and sizes, it should be safe to pass parameters to this without checking them first.
     // This enables us to have one function that handles error checking and will be more maintainable, hopefully
 
+    // VERSION 2.0
+    // We now take in a data_location pointer. When increasing capacity, we fill the gap from that data source
+    // When extracting objects, we place them at that location
+    // Deconstructing does not use or check that pointer
+    // if the pointer was bad, the data structure wasn't changed (unless it was deconstruction)
+    // can't const const the pointer because then we can't write to it on extract
+
 
     if (dyn_array && count) {
         // dyn good, count ok
-        if (mode == CREATE_GAP) {
+        if (mode == CREATE_GAP && data_location) {
             // may or may not need to increase capacity.
             // We'll ask the capacity function if we can do it.
             // If we can, do it. If not... Too bad for the user.
@@ -290,6 +284,9 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
                             DYN_ARRAY_POSITION(dyn_array, position),
                             DYN_SIZE_N_ELEMS(dyn_array, dyn_array->size - position));
                 }
+                memcpy(DYN_ARRAY_POSITION(dyn_array, position),
+                       data_location,
+                       dyn_array->data_size * count);
                 dyn_array->size += count;
                 return true;
             }
@@ -299,10 +296,20 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
 
             // verify size and range
             if ((position + count) <= dyn_array->size) {
-                if (mode == FILL_GAP_DESTRUCT && dyn_array->destructor) { // destruct AND HAVE DESTRUCTOR
-                    uint8_t *arr_pos = DYN_ARRAY_POSITION(dyn_array, position);
-                    for (size_t total = count; total; --total, arr_pos += dyn_array->data_size) {
-                        dyn_array->destructor(arr_pos);
+                if (mode == FILL_GAP_DESTRUCT) {
+                    if (dyn_array->destructor) { // destruct AND HAVE DESTRUCTOR
+                        uint8_t *arr_pos = DYN_ARRAY_POSITION(dyn_array, position);
+                        for (size_t total = count; total; --total, arr_pos += dyn_array->data_size) {
+                            dyn_array->destructor(arr_pos);
+                        }
+                    }
+                } else {
+                    if (data_location) {
+                        memcpy(data_location,
+                               DYN_ARRAY_POSITION(dyn_array, position),
+                               dyn_array->data_size * count);
+                    } else {
+                        return false;
                     }
                 }
                 // pointer arithmatic on void pointers is illegal nowadays :C
@@ -323,7 +330,7 @@ bool dyn_shift(dynamic_array_t *dyn_array, size_t position, size_t count, DYN_SH
     return false;
 }
 
-bool dyn_request_size_increase(dynamic_array_t *dyn_array, size_t increment) {
+bool dyn_request_size_increase(dynamic_array_t *const dyn_array, const size_t increment) {
     // check to see if the size can be increased by the increment
     // and increase capacity if need be
     // average case will be perfectly fine, single increment
