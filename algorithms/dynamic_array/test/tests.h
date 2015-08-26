@@ -161,18 +161,10 @@
 // Shamelessly stolen from
 // http://pixelscommander.com/wp-content/uploads/2014/12/P10.pdf
 // modded a bit so it dies when false
-// Kinda funny it gets mad about abort() being void
-
-bool die() {
-    // so we can break on die and still have a useable stack to debug on
-    // and we still have a core dump if it wasn't being debugged
-    abort();
-    return false;
-}
 
 #define assert(e) ((e) ? (true) : \
-                   (printf("%s,%d: assertion '%s' failed\n",__FILE__, __LINE__, #e), \
-                    fflush(stdout), die()))
+                   (fprintf(stderr,"%s,%d: assertion '%s' failed\n",__FILE__, __LINE__, #e), \
+                    fflush(stdout), abort()))
 
 #define DATA_BLOCK_SIZE 100
 uint8_t DATA_BLOCKS[6][DATA_BLOCK_SIZE];

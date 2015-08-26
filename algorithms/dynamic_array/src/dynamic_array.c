@@ -12,7 +12,7 @@ struct dynamic_array {
 // Semi-arbitrary cap on contents. We'll run out of memory before this happens anyway.
 // Allowing it to be externally set
 #ifndef DYN_MAX_CAPACITY
-    #define DYN_MAX_CAPACITY (1 << ((sizeof(size_t) << 3) - 8))
+    #define DYN_MAX_CAPACITY (((size_t)1) << ((sizeof(size_t) << 3) - 8))
 #endif
 
 // Safety functions from when I was concerned size_t may overflow

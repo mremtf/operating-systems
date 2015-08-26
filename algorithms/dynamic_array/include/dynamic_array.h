@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 
 typedef struct dynamic_array dynamic_array_t;
