@@ -53,7 +53,7 @@
     15. Uhh... Check the math?
 
     // Gets pointer for writing bitmap to file
-    uint8_t* bitmap_get_data(bitmap_t* bitmap);
+    uint8_t* bitmap_export(bitmap_t* bitmap);
 
     16. Uhh... Check the pointer?
 
@@ -105,8 +105,8 @@ int main() {
     assert(bitmap_A->bit_count == test_bit_count);
     assert(bitmap_A->byte_count == test_byte_count);
     // (also 16)
-    assert(bitmap_get_data(bitmap_A) == bitmap_A->data);
-    assert(memcmp_fixed(bitmap_get_data(bitmap_A), 0x00, test_byte_count));
+    assert(bitmap_export(bitmap_A) == bitmap_A->data);
+    assert(memcmp_fixed(bitmap_export(bitmap_A), 0x00, test_byte_count));
 
     // 21
     assert(bitmap_initialize(0) == NULL);
@@ -465,7 +465,7 @@ int main() {
     assert(bitmap_get_bytes(bitmap_A) == test_byte_count);
 
     // 16
-    assert(bitmap_get_data(bitmap_A) == bitmap_A->data);
+    assert(bitmap_export(bitmap_A) == bitmap_A->data);
 
     // 18
     assert(bitmap_import(0, bitmap_A->data) == NULL);

@@ -9,6 +9,8 @@
 
 typedef struct bitmap bitmap_t;
 
+
+
 // WARNING: Bit requests outside the bitmap and NULL pointers WILL result in a segfault
 // This is by design. There is as little overhead as possible. Use it right and everything will be fine.
 
@@ -37,7 +39,7 @@ size_t bitmap_get_bits(bitmap_t *bitmap);
 size_t bitmap_get_bytes(bitmap_t *bitmap);
 
 // Gets pointer for writing bitmap to file
-uint8_t *bitmap_get_data(bitmap_t *bitmap);
+const uint8_t *bitmap_export(bitmap_t *bitmap);
 
 // Creates a new bitmap with the provided data and size
 bitmap_t *bitmap_import(size_t n_bits, uint8_t *bitmap_data);
